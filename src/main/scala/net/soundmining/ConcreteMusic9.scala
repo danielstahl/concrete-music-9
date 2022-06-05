@@ -3,8 +3,9 @@ package net.soundmining
 import net.soundmining.Generative.{Picker, WeightedRandom, randomRange}
 import net.soundmining.modular.ModularSynth.{lineControl, relativePercControl, relativeThreeBlockcontrol, staticControl}
 import net.soundmining.modular.{SoundPlay, SynthPlayer}
+import net.soundmining.synth.Instrument.{EFFECT, ROOM_EFFECT, SOURCE}
 import net.soundmining.synth.{Instrument, Patch, PatchPlayback, SuperColliderClient, SuperColliderReceiver}
-import net.soundmining.synth.SuperColliderClient.loadDir
+import net.soundmining.synth.SuperColliderClient.{groupHead, groupTail, loadDir}
 
 import scala.util.Random
 
@@ -51,14 +52,19 @@ object ConcreteMusic9 {
   val patch = ResonatorCanon
   var patchPlayback: PatchPlayback = PatchPlayback(patch = patch, client = client)
   val superColliderReceiver: SuperColliderReceiver = SuperColliderReceiver(patchPlayback)
-
+  val SHOULD_WRITE_TO_SCORE = true
 
   def init(): Unit = {
     println("Starting up SuperCollider client")
     client.start
     Instrument.setupNodes(client)
     client.send(loadDir(SYNTH_DIR))
-    synthPlayer.init()
+    if(SHOULD_WRITE_TO_SCORE) {
+      synthPlayer.initScore()
+    } else {
+      synthPlayer.init()
+    }
+
     superColliderReceiver.start()
   }
 
@@ -77,12 +83,13 @@ object ConcreteMusic9 {
     val door1spectrum = Spectrum.makeSpectrum2(182, door1rate, 50)
     val hit1rate = 459.0 / 762.0
     val hit1spectrum = Spectrum.makeSpectrum2(459, door1rate, 50)
+    val overAllAmp = 100
 
     def firstResonator(series: Seq[Int], startTime: Double): Double = {
       var firstTime = startTime
       series.foreach(note => {
         val vel = randomRange(20, 100)
-        val amp = vel / 127.0
+        val amp = (vel / 127.0) * overAllAmp
         val duration = randomRange(8, 21)
 
         val panStart = randomRange(-0.8, 0.8)
@@ -92,13 +99,13 @@ object ConcreteMusic9 {
           .pulse(staticControl(chest1spectrum(note)), relativeThreeBlockcontrol(0.001, 0.3, amp, amp, 0.4, 0.001, Left(Seq(0, 0, 0))))
           .ring(staticControl(chest1spectrum(note + 2)))
           .pan(lineControl(panStart - 0.1, panEnd + 0.1))
-          .playWithDuration(firstTime + randomRange(0, 0.1), duration * randomRange(0.9, 1.0))
+          .playWithDuration(firstTime + randomRange(0, 0.1), duration * randomRange(0.9, 1.0), outputBus = 0, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
 
         synthPlayer()
           .triangle(staticControl(chest1spectrum(note + 5)), relativeThreeBlockcontrol(0.001, 0.3, amp, amp, 0.4, 0.001, Left(Seq(0, 0, 0))))
           .ring(staticControl(chest1spectrum(note + 10)))
           .pan(lineControl(panStart + 0.1, panEnd - 0.1))
-          .playWithDuration(firstTime + randomRange(0, 0.1), duration * randomRange(0.9, 1.0))
+          .playWithDuration(firstTime + randomRange(0, 0.1), duration * randomRange(0.9, 1.0), outputBus = 2, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
 
         val firstDeltaTime = randomRange(8, 13)
         firstTime += firstDeltaTime
@@ -109,9 +116,10 @@ object ConcreteMusic9 {
     def secondResonator(series: Seq[Int], startTime: Double): Double = {
       var secondTime = startTime
 
+      val overAllAmp = 100
       series.foreach(note => {
         val vel = randomRange(20, 100)
-        val amp = vel / 127.0
+        val amp = (vel / 127.0) * overAllAmp
         val duration = randomRange(8, 21)
 
         val panStart = randomRange(-0.8, 0.8)
@@ -121,12 +129,12 @@ object ConcreteMusic9 {
           .saw(staticControl(door1spectrum(note)), relativeThreeBlockcontrol(0.001, 0.1, amp, amp, 0.2, 0.001, Left(Seq(0, 0, 0))))
           .ring(staticControl(door1spectrum(note + 2)))
           .pan(lineControl(panStart - 0.1, panEnd + 0.1))
-          .playWithDuration(secondTime + randomRange(0, 0.1), duration * randomRange(0.9, 1.0))
+          .playWithDuration(secondTime + randomRange(0, 0.1), duration * randomRange(0.9, 1.0), outputBus = 4, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
         synthPlayer()
           .sine(staticControl(door1spectrum(note + 3)), relativeThreeBlockcontrol(0.001, 0.1, amp, amp, 0.2, 0.001, Left(Seq(0, 0, 0))))
           .ring(staticControl(door1spectrum(note + 6)))
           .pan(lineControl(panStart + 0.1, panEnd - 0.1))
-          .playWithDuration(secondTime + randomRange(0, 0.1), duration * randomRange(0.9, 1.0))
+          .playWithDuration(secondTime + randomRange(0, 0.1), duration * randomRange(0.9, 1.0), outputBus = 6, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
 
         val secondDeltaTime = randomRange(8, 13)
         secondTime += secondDeltaTime
@@ -136,10 +144,11 @@ object ConcreteMusic9 {
 
     def thirdResonator(series: Seq[Int], startTime: Double): Double = {
       var thirdTime = startTime
+      val overAllAmp = 100
 
       series.foreach(note => {
         val vel = randomRange(20, 100)
-        val amp = vel / 127.0
+        val amp = (vel / 127.0) * overAllAmp
         val duration = randomRange(8, 21)
 
         val panStart = randomRange(-0.8, 0.8)
@@ -149,12 +158,12 @@ object ConcreteMusic9 {
           .sine(staticControl(hit1spectrum(note)), relativePercControl(0.001, amp, 0.5, Left(Seq(0, 0))))
           .ring(staticControl(hit1spectrum(note + 4)))
           .pan(lineControl(panStart - 0.1, panEnd + 0.1))
-          .playWithDuration(thirdTime + randomRange(0, 0.1), duration * randomRange(0.9, 1.0))
+          .playWithDuration(thirdTime + randomRange(0, 0.1), duration * randomRange(0.9, 1.0), outputBus = 8, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
         synthPlayer()
           .triangle(staticControl(hit1spectrum(note + 7)), relativePercControl(0.001, amp, 0.5, Left(Seq(0, 0))))
           .ring(staticControl(hit1spectrum(note + 13)))
           .pan(lineControl(panStart + 0.1, panEnd - 0.1))
-          .playWithDuration(thirdTime + randomRange(0, 0.1), duration * randomRange(0.9, 1.0))
+          .playWithDuration(thirdTime + randomRange(0, 0.1), duration * randomRange(0.9, 1.0), outputBus = 10, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
 
         val thirdDeltaTime = randomRange(8, 13)
         thirdTime += thirdDeltaTime
@@ -165,8 +174,9 @@ object ConcreteMusic9 {
     def dustPart(dustStart: Double, dustTotalLength: Double, dustDeltaMin: Double, dustDeltaMax: Double, velocity: Int): Double = {
       var dustTime = dustStart
       println(s"Dust total length $dustTotalLength")
+      val overAllAmp = 50
       while(dustTime < (dustStart + dustTotalLength)) {
-        DustPatch.staticHandle(dustTime, velocity)
+        DustPatch.staticHandle(dustTime, velocity * overAllAmp)
         val dustDeltaTime = randomRange(dustDeltaMin, dustDeltaMax)
         dustTime += dustDeltaTime
       }
@@ -226,21 +236,21 @@ object ConcreteMusic9 {
         synthPlayer(CHEST_1)
           .playMono(1, amp)
           .pan(staticControl(pan))
-          .play(start)
+          .play(start, outputBus = 12, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       },
       (start: Double, amp: Double, pan: Double) => {
         synthPlayer(CHEST_1)
           .playMono(1 + randomRange(-0.001, 0.001), amp * 10)
           .lowPass(staticControl(156 * CHEST1_RATE))
           .pan(staticControl(pan + randomRange(-0.1, 0.1)))
-          .play(start + randomRange(0.0, 0.0001))
+          .play(start + randomRange(0.0, 0.0001), outputBus = 14, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       },
       (start: Double, amp: Double, pan: Double) => {
         synthPlayer(CHEST_1)
           .playMono(1 + randomRange(-0.001, 0.001), amp)
           .lowPass(staticControl(156))
           .pan(staticControl(pan + randomRange(-0.1, 0.1)))
-          .play(start + randomRange(0.0, 0.0001))
+          .play(start + randomRange(0.0, 0.0001), outputBus = 16, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       },
 
       (start: Double, amp: Double, pan: Double) => {
@@ -249,14 +259,14 @@ object ConcreteMusic9 {
           .lowPass(staticControl(478))
           .highPass(staticControl(1171))
           .pan(staticControl(pan + randomRange(-0.1, 0.1)))
-          .play(start + randomRange(0.0, 0.0001))
+          .play(start + randomRange(0.0, 0.0001), outputBus = 18, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       },
       (start: Double, amp: Double, pan: Double) => {
         synthPlayer(CHEST_1)
           .playMono(1 + randomRange(-0.001, 0.001), amp * 10)
           .highPass(staticControl(1171))
           .pan(staticControl(pan + randomRange(-0.1, 0.1)))
-          .play(start - randomRange(0.0, 0.0001))
+          .play(start - randomRange(0.0, 0.0001), outputBus = 20, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       })
     val CHEST1_PICKER = Picker(CHEST1_VARIANTS)
 
@@ -267,21 +277,21 @@ object ConcreteMusic9 {
         synthPlayer(DOOR_1)
           .playMono(1.0, amp)
           .pan(staticControl(pan))
-          .play(start)
+          .play(start, outputBus = 22, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       },
       (start: Double, amp: Double, pan: Double) => {
         synthPlayer(DOOR_1)
           .playMono(1 + randomRange(-0.001, 0.001), amp * 10)
           .lowPass(staticControl(182 * DOOR1_RATE))
           .pan(staticControl(pan + randomRange(-0.1, 0.1)))
-          .play(start)
+          .play(start, outputBus = 24, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       },
       (start: Double, amp: Double, pan: Double) => {
         synthPlayer(DOOR_1)
           .playMono(1 + randomRange(-0.001, 0.001), amp)
           .lowPass(staticControl(182))
           .pan(staticControl(pan + randomRange(-0.1, 0.1)))
-          .play(start)
+          .play(start, outputBus = 26, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       },
       (start: Double, amp: Double, pan: Double) => {
         synthPlayer(DOOR_1)
@@ -289,14 +299,14 @@ object ConcreteMusic9 {
           .lowPass(staticControl(907))
           .highPass(staticControl(1737))
           .pan(staticControl(pan + randomRange(-0.1, 0.1)))
-          .play(start + randomRange(0.0, 0.0001))
+          .play(start + randomRange(0.0, 0.0001), outputBus = 28, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       },
       (start: Double, amp: Double, pan: Double) => {
         synthPlayer(DOOR_1)
           .playMono(1 + randomRange(-0.001, 0.001), amp * 10)
           .highPass(staticControl(1737))
           .pan(staticControl(pan + randomRange(-0.1, 0.1)))
-          .play(start - randomRange(0.0, 0.0001))
+          .play(start - randomRange(0.0, 0.0001), outputBus = 30, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       })
 
     val DOOR1_PICKER = Picker(DOOR1_VARIANTS)
@@ -308,21 +318,21 @@ object ConcreteMusic9 {
         synthPlayer(HIT_1)
           .playMono(1.0, amp)
           .pan(staticControl(pan))
-          .play(start)
+          .play(start, outputBus = 32, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       },
       (start: Double, amp: Double, pan: Double) => {
         synthPlayer(HIT_1)
           .playMono(1 + randomRange(-0.001, 0.001), amp * 10)
           .lowPass(staticControl(459 * HIT1_RATE))
           .pan(staticControl(pan + randomRange(-0.1, 0.1)))
-          .play(start)
+          .play(start, outputBus = 34, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       },
       (start: Double, amp: Double, pan: Double) => {
         synthPlayer(HIT_1)
           .playMono(1 + randomRange(-0.001, 0.001), amp)
           .lowPass(staticControl(459))
           .pan(staticControl(pan + randomRange(-0.1, 0.1)))
-          .play(start)
+          .play(start, outputBus = 36, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       },
       (start: Double, amp: Double, pan: Double) => {
         synthPlayer(HIT_1)
@@ -330,14 +340,14 @@ object ConcreteMusic9 {
           .lowPass(staticControl(762))
           .highPass(staticControl(1848))
           .pan(staticControl(pan + randomRange(-0.1, 0.1)))
-          .play(start + randomRange(0.0, 0.0001))
+          .play(start + randomRange(0.0, 0.0001), outputBus = 38, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       },
       (start: Double, amp: Double, pan: Double) => {
         synthPlayer(HIT_1)
           .playMono(1 + randomRange(-0.001, 0.001), amp * 10)
           .highPass(staticControl(1848))
           .pan(staticControl(pan + randomRange(-0.1, 0.1)))
-          .play(start - randomRange(0.0, 0.0001))
+          .play(start - randomRange(0.0, 0.0001), outputBus = 40, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       })
 
     val HIT1_PICKER = Picker(HIT1_VARIANTS)
@@ -349,7 +359,7 @@ object ConcreteMusic9 {
         synthPlayer(HIT_2)
           .playMono(1.0, amp)
           .pan(staticControl(pan))
-          .play(start)
+          .play(start, outputBus = 42, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       },
 
       (start: Double, amp: Double, pan: Double) => {
@@ -357,7 +367,7 @@ object ConcreteMusic9 {
           .playMono(1 + randomRange(-0.001, 0.001), amp * 10)
           .lowPass(staticControl(540 * HIT2_RATE))
           .pan(staticControl(pan + randomRange(-0.1, 0.1)))
-          .play(start)
+          .play(start, outputBus = 44, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       },
 
       (start: Double, amp: Double, pan: Double) => {
@@ -365,7 +375,7 @@ object ConcreteMusic9 {
           .playMono(1 + randomRange(-0.001, 0.001), amp)
           .lowPass(staticControl(540))
           .pan(staticControl(pan + randomRange(-0.1, 0.1)))
-          .play(start)
+          .play(start, outputBus = 46, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       },
 
       (start: Double, amp: Double, pan: Double) => {
@@ -374,7 +384,7 @@ object ConcreteMusic9 {
           .lowPass(staticControl(1193))
           .highPass(staticControl(3578))
           .pan(staticControl(pan + randomRange(-0.1, 0.1)))
-          .play(start + randomRange(0.0, 0.0001))
+          .play(start + randomRange(0.0, 0.0001), outputBus = 48, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       },
 
       (start: Double, amp: Double, pan: Double) => {
@@ -382,7 +392,7 @@ object ConcreteMusic9 {
           .playMono(1 + randomRange(-0.001, 0.001), amp * 10)
           .highPass(staticControl(3578))
           .pan(staticControl(pan + randomRange(-0.1, 0.1)))
-          .play(start - randomRange(0.0, 0.0001))
+          .play(start - randomRange(0.0, 0.0001), outputBus = 50, shouldWriteToScore = SHOULD_WRITE_TO_SCORE)
       }
     )
 
@@ -394,8 +404,18 @@ object ConcreteMusic9 {
 
     def playPiece(start: Double = 0, reset: Boolean = true): Unit = {
       if(reset) client.resetClock()
+      if(SHOULD_WRITE_TO_SCORE) {
+        synthPlayer.superColliderScore.addMessage(0, groupHead(0, SOURCE.nodeId))
+        synthPlayer.superColliderScore.addMessage(0, groupTail(SOURCE.nodeId, EFFECT.nodeId))
+        synthPlayer.superColliderScore.addMessage(0, groupTail(EFFECT.nodeId, ROOM_EFFECT.nodeId))
+        synthPlayer.superColliderScore.addMessage(0, loadDir(SYNTH_DIR))
+      }
+
       val velocity = randomRange(45, 80).round.toInt
       staticHandle(start, velocity)
+      if(SHOULD_WRITE_TO_SCORE) {
+        synthPlayer.superColliderScore.makeScore("concreteMusic9.txt")
+      }
     }
 
     def staticHandle(start: Double, velocity: Int): Unit = {
